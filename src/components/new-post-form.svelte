@@ -1,11 +1,12 @@
 <script lang="ts">
-  import type { Post } from '$lib/types'
-
   import { createForm } from 'felte'
   import { validator } from '@felte/validator-zod'
   import { blur, scale } from 'svelte/transition'
-  import { POST_SCHEMA } from '$lib/constants'
+
   import PostDisplay from './post-display.svelte'
+
+  import { POST_SCHEMA } from '$lib/constants'
+  import type { Post } from '$lib/types'
   import trpcClient from '$lib/trpc-client'
 
   export let innerPost: Post | null = null
@@ -29,7 +30,7 @@
     extend: validator({ schema: POST_SCHEMA }),
   })
 
-  let previewWidth: number = 375
+  let previewWidth = 375
 
   $: showPreview = $data.reply || $data.imageUrl
 </script>

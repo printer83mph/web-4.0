@@ -11,26 +11,24 @@ export const router = trpc
     input: z
       .object({ from: z.date().optional(), to: z.date().optional() })
       .refine(({ from, to }) => !from || !to || from.getTime() < to.getTime()),
-    resolve: async ({ input: { from, to } }) => {
-      return prisma.post.findMany({
+    resolve: async ({ input: { from, to } }) =>
+      prisma.post.findMany({
         where: {
           created: {
             ...(from ? { gte: from } : null),
             ...(to ? { lte: to } : null),
           },
         },
-      })
-    },
+      }),
   })
   .mutation('new-post', {
     input: POST_SCHEMA,
     // we are taking it out bc we dont need it.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    resolve: async ({ input: { reply, ...input } }) => {
-      return await prisma.post.create({
+    resolve: async ({ input: { reply, ...input } }) =>
+      prisma.post.create({
         data: { postData: { set: input } },
-      })
-    },
+      }),
   })
 
 export type Router = typeof router

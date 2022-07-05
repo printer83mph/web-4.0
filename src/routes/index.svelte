@@ -2,9 +2,9 @@
   import type { Post } from '$lib/types'
   import PostDisplay from '$components/post-display.svelte'
 
-  let width: number = 800
-  let title: string = 'DETERMINATION'
-  let subtitle: string = "Just because you tried doesn't mean it was worth it"
+  let width = 800
+  let title = 'DETERMINATION'
+  let subtitle = "Just because you tried doesn't mean it was worth it"
 
   $: post = {
     title,

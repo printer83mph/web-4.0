@@ -2,14 +2,12 @@
   import type { Post } from 'src/lib/types'
 
   export let post: Post
-
   export let width: number
-  $: cssWidth = `${width}px`
 </script>
 
 <div
   class="post-container relative flex select-none flex-col items-center bg-black text-center font-serif text-white"
-  style:--width={cssWidth}
+  style:--width={`${width}px`}
 >
   <div class="img-container p-[.5%]" class:limit-height={!post.reply}>
     {#if post.reply}

@@ -1,20 +1,41 @@
 module.exports = {
   root: true,
-  parser: '@typescript-eslint/parser',
-  extends: [
-    'eslint:recommended',
-    'plugin:@typescript-eslint/recommended',
-    'prettier',
+  plugins: ['svelte3', 'unused-imports'],
+  ignorePatterns: ['*.cjs', '*.config.js'],
+  overrides: [
+    {
+      files: ['*.ts', '*.svelte'],
+      extends: [
+        'airbnb-base',
+        'airbnb-typescript/base',
+        'plugin:@typescript-eslint/recommended',
+        'prettier',
+      ],
+      parserOptions: {
+        sourceType: 'module',
+        ecmaVersion: 2020,
+        project: ['./tsconfig.json'],
+        extraFileExtensions: ['.svelte'],
+      },
+      rules: {
+        'import/extensions': ['error', 'never'],
+        'import/prefer-default-export': 'off',
+      },
+    },
+    {
+      files: ['*.svelte'],
+      processor: 'svelte3/svelte3',
+      rules: {
+        'import/no-mutable-exports': 'off',
+        'import/first': 'off',
+        'import/no-unresolved': 'off',
+        'import/no-extraneous-dependencies': 'off',
+        'import/extensions': 'off',
+      },
+    },
   ],
-  plugins: ['svelte3', '@typescript-eslint', 'unused-imports'],
-  ignorePatterns: ['*.cjs'],
-  overrides: [{ files: ['*.svelte'], processor: 'svelte3/svelte3' }],
   settings: {
     'svelte3/typescript': () => require('typescript'),
-  },
-  parserOptions: {
-    sourceType: 'module',
-    ecmaVersion: 2020,
   },
   env: {
     browser: true,
@@ -23,5 +44,6 @@ module.exports = {
   },
   rules: {
     'unused-imports/no-unused-imports': 'error',
+    'import/order': ['error', { 'newlines-between': 'always' }],
   },
 }
