@@ -20,6 +20,8 @@ module.exports = {
       rules: {
         'import/extensions': ['error', 'never'],
         'import/prefer-default-export': 'off',
+        'unused-imports/no-unused-imports': 'error',
+        'import/order': ['error', { 'newlines-between': 'always' }],
       },
     },
     {
@@ -41,9 +43,5 @@ module.exports = {
     browser: true,
     es2017: true,
     node: true,
-  },
-  rules: {
-    'unused-imports/no-unused-imports': 'error',
-    'import/order': ['error', { 'newlines-between': 'always' }],
   },
 }

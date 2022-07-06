@@ -1,22 +1,22 @@
 <script lang="ts">
-  import type { Post } from 'src/lib/types'
+  import type { PostData } from '$models/post'
 
-  export let post: Post
+  export let post: PostData
   export let width: number
 </script>
 
 <div
-  class="post-container relative flex select-none flex-col items-center bg-black text-center font-serif text-white"
+  class="post-container relative flex select-none flex-col items-center overflow-hidden bg-black text-center font-serif text-white"
   style:--width={`${width}px`}
 >
-  <div class="img-container p-[.5%]" class:limit-height={!post.reply}>
-    {#if post.reply}
+  <div class="img-container p-[.5%]" class:limit-height={!post.isReply}>
+    {#if post.isReply}
       <svelte:self post={post.innerPost} width={width * 0.65} />
     {:else}
       <img src={post.imageUrl} alt={post.title} class="h-full" />
     {/if}
   </div>
-  <h3 class="title leading-[100%] tracking-wide">{post.title}</h3>
+  <h3 class="title uppercase leading-[100%] tracking-wide">{post.title}</h3>
   <p class="subtitle leading-[150%]">{post.subtitle}</p>
 </div>
 

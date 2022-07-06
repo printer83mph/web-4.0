@@ -2,33 +2,44 @@ import * as trpc from '@trpc/server'
 import { z } from 'zod'
 
 import prisma from './prisma'
-import { POST_SCHEMA } from './constants'
+import imgur from './imgur'
+
+import { parsePrismaPost, postSchema } from '$models/post'
+import { createPost } from '$models/post-actions'
 
 export const router = trpc
   .router()
-  // queries and mutations...
   .query('posts', {
     input: z
       .object({ from: z.date().optional(), to: z.date().optional() })
-      .refine(({ from, to }) => !from || !to || from.getTime() < to.getTime()),
-    resolve: async ({ input: { from, to } }) =>
-      prisma.post.findMany({
+      .refine(({ from, to }) => !from || !to || from.getTime() < to.getTime())
+      .optional(),
+    async resolve({ input: { from, to } = {} }) {
+      const posts = await prisma.post.findMany({
         where: {
           created: {
-            ...(from ? { gte: from } : null),
-            ...(to ? { lte: to } : null),
+            gte: from,
+            lte: to,
           },
         },
-      }),
+        orderBy: { created: 'asc' },
+      })
+      return posts.map(parsePrismaPost)
+    },
   })
   .mutation('new-post', {
-    input: POST_SCHEMA,
-    // we are taking it out bc we dont need it.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    resolve: async ({ input: { reply, ...input } }) =>
-      prisma.post.create({
-        data: { postData: { set: input } },
-      }),
+    input: postSchema,
+    async resolve({ input }) {
+      const post = await createPost(input)
+      return parsePrismaPost(post)
+    },
+  })
+  .mutation('upload-image', {
+    input: z.string().min(1),
+    async resolve({ input: image }) {
+      const response = await imgur.upload({ image, type: 'stream' })
+      return response.data.link
+    },
   })
 
 export type Router = typeof router

@@ -7,18 +7,11 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL")
-}
-
-type PostData {
-  title     String
-  subtitle  String
-  innerPost PostData?
-  imageUrl  String?
+  url      = env("MONGODB_URI")
 }
 
 model Post {
-  id       String   @id @default(auto()) @map("_id") @db.ObjectId
-  postData PostData
-  created  DateTime @default(now())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  stringified String   @map("data")
+  created     DateTime @default(now())
 }
