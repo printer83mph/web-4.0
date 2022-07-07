@@ -17,10 +17,17 @@
 
   let containerWidth: number | undefined
 
-  let postsList: PostWithMeta[]
+  let onlinePostsList: PostWithMeta[]
+  let lastPostDate = new Date()
 
   async function fetchData() {
-    postsList = (await trpcClient.query('posts')).reverse()
+    const oneMonthBack = new Date(lastPostDate)
+    oneMonthBack.setDate(oneMonthBack.getDate() - 30)
+    onlinePostsList = await trpcClient.query('posts', {
+      from: oneMonthBack.getTime(),
+      to: lastPostDate.getTime(),
+    })
+    lastPostDate = oneMonthBack
   }
 
   let dialog: { open: boolean; innerPost: PostData | null } = {
@@ -37,17 +44,20 @@
   }
 
   function onNewPost(post: CustomEvent<PostWithMeta>) {
-    console.log('pushing new post')
-    postsList.unshift(post.detail)
-    postsList = postsList
+    onlinePostsList.unshift(post.detail)
+    onlinePostsList = onlinePostsList
     closeDialog()
   }
 
   onMount(fetchData)
 </script>
 
+<svelte:head>
+  <title>Browse the Internet | Web 4.0</title>
+</svelte:head>
+
 <main class="mx-auto lg:max-w-5xl" bind:clientWidth={containerWidth}>
-  <div class="sticky top-0 z-10 flex bg-white py-3 px-4 lg:px-0">
+  <nav class="sticky top-0 z-10 flex select-none bg-white py-3 px-4 lg:px-0">
     <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
       <GlobeIcon /> Web 4.0
     </h1>
@@ -58,16 +68,16 @@
     >
       <PlusIcon /> New Post
     </button>
-  </div>
-  {#if postsList && containerWidth}
+  </nav>
+  {#if onlinePostsList && containerWidth}
     <ul class="relative flex flex-col gap-6 pb-6">
-      {#each postsList as post}
+      {#each onlinePostsList as post}
         <div class="flex flex-col" in:fade={{ duration: 150 }}>
           <PostDisplay {post} width={containerWidth} />
           <div class="mt-1 flex items-center px-2 text-gray-500 lg:px-0">
             <button
               type="button"
-              class="ml-auto flex items-center gap-2 rounded px-3 py-2 transition-[color,box-shadow] hover:text-black hover:shadow-md"
+              class="ml-auto flex select-none items-center gap-2 rounded px-3 py-2 transition-[color,box-shadow] hover:text-black hover:shadow-md"
               on:click={() => openDialog(post)}
               ><CornerUpLeftIcon />Reply</button
             >
@@ -97,9 +107,7 @@
           aria-hidden="true"
         />
         <!-- centering container -->
-        <div
-          class="flex h-full w-full items-start justify-center lg:items-center"
-        >
+        <div class="flex h-full w-full items-start justify-center">
           <!-- actual panel -->
           <div
             class="relative flex w-full max-w-lg flex-col gap-4 rounded-md bg-white p-4"

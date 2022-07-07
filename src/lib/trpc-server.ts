@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import prisma from './prisma'
 import imgur from './imgur'
+import { timeToDate } from './data-util'
 
 import { parsePrismaPost, postSchema } from '$models/post'
 import { createPost } from '$models/post-actions'
@@ -11,15 +12,17 @@ export const router = trpc
   .router()
   .query('posts', {
     input: z
-      .object({ from: z.date().optional(), to: z.date().optional() })
-      .refine(({ from, to }) => !from || !to || from.getTime() < to.getTime())
+      .object({ from: z.number().optional(), to: z.number().optional() })
+      .refine(({ from, to }) => !from || !to || from < to)
       .optional(),
     async resolve({ input: { from, to } = {} }) {
+      const fromDate = from === undefined ? undefined : timeToDate(from)
+      const toDate = to === undefined ? undefined : timeToDate(to)
       const posts = await prisma.post.findMany({
         where: {
           created: {
-            gte: from,
-            lte: to,
+            gte: fromDate,
+            lte: toDate,
           },
         },
         orderBy: { created: 'asc' },

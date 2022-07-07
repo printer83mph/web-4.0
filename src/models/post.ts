@@ -23,7 +23,12 @@ export const postSchema: z.ZodType<PostData> = z.lazy(() =>
     .and(
       z.discriminatedUnion('isReply', [
         z.object({ isReply: z.literal(true), innerPost: postSchema }),
-        z.object({ isReply: z.literal(false), imageUrl: z.string() }),
+        z.object({
+          isReply: z.literal(false),
+          imageUrl: z.string().regex(/\.(jpeg|jpg|gif|png|webp)$/, {
+            message: 'Invalid image URL',
+          }),
+        }),
       ])
     )
 )

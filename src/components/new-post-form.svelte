@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createForm } from 'felte'
   import { validator } from '@felte/validator-zod'
-  import { blur, fade } from 'svelte/transition'
+  import { fade } from 'svelte/transition'
   import { createEventDispatcher } from 'svelte'
   import Dropzone from 'svelte-file-dropzone'
 
@@ -14,24 +14,37 @@
 
   const dispatch = createEventDispatcher<{ submit: PostWithMeta }>()
 
-  const { form, data, isSubmitting, setData } = createForm<PostData>({
-    async onSubmit(values) {
-      const newPost = await trpcClient.mutation('new-post', values)
-      dispatch('submit', newPost)
-    },
-    initialValues: {
-      title: '',
-      subtitle: '',
-      isReply: !!innerPost,
-      innerPost: innerPost || undefined,
-      imageUrl: innerPost ? undefined : '',
-    },
-    transform: (values) => ({
-      ...(values as PostData),
-      title: (values as PostData).title.toUpperCase(),
-    }),
-    extend: validator({ schema: postSchema }),
-  })
+  const { form, data, isSubmitting, setData, isValid, errors } =
+    createForm<PostData>({
+      async onSubmit(values) {
+        const newPost = await trpcClient.mutation('new-post', values)
+        dispatch('submit', newPost)
+      },
+      initialValues: {
+        title: '',
+        subtitle: '',
+        isReply: !!innerPost,
+        innerPost: innerPost || undefined,
+        imageUrl: innerPost ? undefined : '',
+      },
+      transform: (values) => ({
+        ...(values as PostData),
+        title: (values as PostData).title.toUpperCase(),
+      }),
+      extend: validator({ schema: postSchema }),
+      debounced: {
+        timeout: 300,
+        async validate(values) {
+          if (!values.isReply) {
+            const res = await fetch(values.imageUrl)
+            if (!res.ok) {
+              return { imageUrl: 'Image not found' }
+            }
+          }
+          return {}
+        },
+      },
+    })
 
   const onDrop = async ({
     detail: { acceptedFiles },
@@ -43,7 +56,7 @@
   let previewWidth: number | undefined
 
   $: showImageInput = !$data.isReply && !$data.imageUrl
-  $: showPreview = previewWidth && ($data.isReply || $data.imageUrl)
+  $: disableSubmit = $isSubmitting || !$isValid
 </script>
 
 {#if showImageInput}
@@ -54,6 +67,16 @@
   class="flex flex-col gap-6 text-lg"
   bind:clientWidth={previewWidth}
 >
+  {#if !$data.isReply}
+    <label class="flex flex-col">
+      <div class="mb-1 text-sm text-gray-500">Image URL</div>
+      <input
+        type="url"
+        class="rounded px-3 py-2 ring-1 ring-gray-300 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+        bind:value={$data.imageUrl}
+      />
+    </label>
+  {/if}
   <label class="flex flex-col">
     <div class="mb-1 text-sm text-gray-500">Primary Text</div>
     <input
@@ -72,23 +95,23 @@
       placeholder="Not even once."
     />
   </label>
-  {#if showPreview}
-    <div class="mx-auto" transition:blur|local>
+  <button
+    type="submit"
+    class="btn rounded bg-blue-500 px-3 py-2 text-2xl font-medium text-white transition-[background-color,box-shadow] hover:bg-blue-600 hover:shadow-md"
+    class:btn-disabled={disableSubmit}
+    transition:fade|local
+    disabled={disableSubmit}>Submit</button
+  >
+  {#if $isValid}
+    <div class="mx-auto">
       <p class="mb-1 text-sm text-gray-500">Preview</p>
       <PostDisplay post={$data} width={previewWidth} />
     </div>
-    <button
-      type="submit"
-      class="btn rounded bg-blue-500 px-3 py-2 text-2xl font-medium text-white transition-[background-color,box-shadow] hover:bg-blue-600 hover:shadow-md"
-      class:btn-disabled={$isSubmitting}
-      transition:fade|local
-      disabled={$isSubmitting}>Submit</button
-    >
   {/if}
 </form>
 
 <style>
   .btn.btn-disabled {
-    @apply bg-gray-500 text-gray-800;
+    @apply bg-gray-500 text-gray-200;
   }
 </style>
