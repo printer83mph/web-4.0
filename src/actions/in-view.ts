@@ -5,7 +5,7 @@ export default function inView(node: HTMLElement) {
     if (observer) observer.disconnect()
     observer = new IntersectionObserver((e) => {
       node.dispatchEvent(
-        new CustomEvent<boolean>('in-view', { detail: e[0].isIntersecting })
+        new CustomEvent<boolean>('inview', { detail: e[0].isIntersecting })
       )
     })
     observer.observe(node)

@@ -12,24 +12,62 @@
 
   import PostDisplay from '$components/post-display.svelte'
   import trpcClient from '$lib/trpc-client'
-  import type { PostData, PostWithMeta } from '$models/post'
+  import { generatePosts, type PostData, type PostWithMeta } from '$models/post'
   import NewPostForm from '$components/new-post-form.svelte'
+  import inView from '$actions/in-view'
 
   let containerWidth: number | undefined
 
-  let onlinePostsList: PostWithMeta[]
+  // newest last
+  let onlinePosts: PostWithMeta[]
   let lastPostDate = new Date()
+
+  // newest first!
+  let displayPosts: (PostData & { id: string })[]
 
   async function fetchData() {
     const oneMonthBack = new Date(lastPostDate)
     oneMonthBack.setDate(oneMonthBack.getDate() - 30)
-    onlinePostsList = await trpcClient.query('posts', {
+    const posts = await trpcClient.query('posts', {
       from: oneMonthBack.getTime(),
       to: lastPostDate.getTime(),
     })
+    if (!onlinePosts) onlinePosts = []
+    onlinePosts.push(...posts)
+    onlinePosts = onlinePosts
     lastPostDate = oneMonthBack
   }
 
+  async function addPostWithFakes(opts: { top?: boolean } = {}) {
+    if (displayPosts === undefined) displayPosts = []
+    if (onlinePosts.length === 0) return
+    // we have this if statement.
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const latestPost = onlinePosts.pop()!
+    onlinePosts = onlinePosts
+    const posts = [latestPost, ...generatePosts(latestPost.id)]
+    if (opts.top) displayPosts.unshift(...posts)
+    else displayPosts.push(...posts)
+    displayPosts = displayPosts
+  }
+
+  let loadingOnlinePosts = true
+  async function loadContent(evt: CustomEvent<boolean>) {
+    if (!evt.detail) return
+    loadingOnlinePosts = true
+    if (onlinePosts.length === 0) {
+      displayPosts.push(...generatePosts(Math.random().toString()))
+      displayPosts = displayPosts
+    } else {
+      addPostWithFakes()
+      if (onlinePosts.length === 0) {
+        await fetchData()
+      }
+    }
+    loadingOnlinePosts = false
+  }
+
+  // Dialog state management
   let dialog: { open: boolean; innerPost: PostData | null } = {
     open: false,
     innerPost: null,
@@ -44,12 +82,19 @@
   }
 
   function onNewPost(post: CustomEvent<PostWithMeta>) {
-    onlinePostsList.unshift(post.detail)
-    onlinePostsList = onlinePostsList
+    onlinePosts.push(post.detail)
+    onlinePosts = onlinePosts
+    addPostWithFakes({ top: true })
     closeDialog()
   }
 
-  onMount(fetchData)
+  onMount(async () => {
+    await fetchData()
+    loadingOnlinePosts = false
+    addPostWithFakes()
+    addPostWithFakes()
+    addPostWithFakes()
+  })
 </script>
 
 <svelte:head>
@@ -69,10 +114,10 @@
       <PlusIcon /> New Post
     </button>
   </nav>
-  {#if onlinePostsList && containerWidth}
-    <ul class="relative flex flex-col gap-6 pb-6">
-      {#each onlinePostsList as post}
-        <div class="flex flex-col" in:fade={{ duration: 150 }}>
+  {#if displayPosts && containerWidth}
+    <ul class="relative flex flex-col gap-6 pb-6" in:fade={{ duration: 300 }}>
+      {#each displayPosts as post}
+        <li class="flex flex-col">
           <PostDisplay {post} width={containerWidth} />
           <div class="mt-1 flex items-center px-2 text-gray-500 lg:px-0">
             <button
@@ -82,8 +127,13 @@
               ><CornerUpLeftIcon />Reply</button
             >
           </div>
-        </div>
+        </li>
       {/each}
+      {#if !loadingOnlinePosts}
+        <div use:inView on:inview={loadContent} class="h-20" />
+      {:else}
+        <div>Loading...</div>
+      {/if}
     </ul>
   {:else}
     <div
@@ -110,7 +160,7 @@
         <div class="flex h-full w-full items-start justify-center">
           <!-- actual panel -->
           <div
-            class="relative flex w-full max-w-lg flex-col gap-4 rounded-md bg-white p-4"
+            class="relative flex w-full max-w-xl flex-col gap-4 rounded-md bg-white p-4"
             in:fly={{ y: 50, easing: cubicOut, duration: 300 }}
             out:fade={{ duration: 200 }}
           >

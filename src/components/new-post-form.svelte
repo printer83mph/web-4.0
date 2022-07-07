@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createForm } from 'felte'
   import { validator } from '@felte/validator-zod'
-  import { fade } from 'svelte/transition'
+  import { fade, slide } from 'svelte/transition'
   import { createEventDispatcher } from 'svelte'
   import Dropzone from 'svelte-file-dropzone'
 
@@ -14,7 +14,7 @@
 
   const dispatch = createEventDispatcher<{ submit: PostWithMeta }>()
 
-  const { form, data, isSubmitting, setData, isValid, errors } =
+  const { form, data, isSubmitting, setFields, isValid, errors, touched } =
     createForm<PostData>({
       async onSubmit(values) {
         const newPost = await trpcClient.mutation('new-post', values)
@@ -36,12 +36,19 @@
         timeout: 300,
         async validate(values) {
           if (!values.isReply) {
-            const res = await fetch(values.imageUrl)
-            if (!res.ok) {
-              return { imageUrl: 'Image not found' }
+            try {
+              const res = await fetch(values.imageUrl)
+              if (!res.ok) {
+                console.log(res)
+                return { imageUrl: 'Image not found' }
+              }
+            } catch (err) {
+              console.log('invalid url')
+              return { imageUrl: 'Invalid URL' }
             }
           }
-          return {}
+          console.log('all normal!')
+          return { imageUrl: null }
         },
       },
     })
@@ -50,12 +57,15 @@
     detail: { acceptedFiles },
   }: CustomEvent<{ acceptedFiles: File[] }>) => {
     const link = await uploadImage(acceptedFiles[0])
-    setData('imageUrl', link)
+    setFields('imageUrl', link)
   }
 
   let previewWidth: number | undefined
 
+  $: imageUrlErrors = ($errors as { imageUrl: string[] }).imageUrl
+
   $: showImageInput = !$data.isReply && !$data.imageUrl
+  $: showPreview = $isValid
   $: disableSubmit = $isSubmitting || !$isValid
 </script>
 
@@ -68,32 +78,41 @@
   bind:clientWidth={previewWidth}
 >
   {#if !$data.isReply}
-    <label class="flex flex-col">
-      <div class="mb-1 text-sm text-gray-500">Image URL</div>
+    <label class="input" class:error={imageUrlErrors}>
+      <div class="label">Image URL</div>
       <input
         type="url"
-        class="rounded px-3 py-2 ring-1 ring-gray-300 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
-        bind:value={$data.imageUrl}
+        class="field focus:outline-none focus:ring-2 focus:ring-blue-500"
+        name="imageUrl"
       />
+      {#if imageUrlErrors}
+        <div class="error" transition:slide>{imageUrlErrors[0]}.</div>
+      {/if}
     </label>
   {/if}
-  <label class="flex flex-col">
-    <div class="mb-1 text-sm text-gray-500">Primary Text</div>
+  <label class="input" class:error={$errors.title}>
+    <div class="label">Primary Text</div>
     <input
       type="text"
       name="title"
-      class="rounded px-3 py-2 ring-1 ring-gray-300 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
-      placeholder="DRUGS"
+      class="field focus:outline-none focus:ring-2 focus:ring-blue-500"
+      placeholder="Drugs"
     />
+    {#if $errors.title}
+      <div class="error" transition:slide>{$errors.title[0]}.</div>
+    {/if}
   </label>
-  <label class="flex flex-col">
-    <div class="mb-1 text-sm text-gray-500">Secondary Text</div>
+  <label class="input" class:error={$errors.subtitle}>
+    <div class="label">Secondary Text</div>
     <input
       type="text"
       name="subtitle"
-      class="rounded px-3 py-2 ring-1 ring-gray-300 transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="field focus:outline-none focus:ring-2 focus:ring-blue-500"
       placeholder="Not even once."
     />
+    {#if $errors.subtitle}
+      <div class="error" transition:slide>{$errors.subtitle[0]}.</div>
+    {/if}
   </label>
   <button
     type="submit"
@@ -102,7 +121,7 @@
     transition:fade|local
     disabled={disableSubmit}>Submit</button
   >
-  {#if $isValid}
+  {#if showPreview}
     <div class="mx-auto">
       <p class="mb-1 text-sm text-gray-500">Preview</p>
       <PostDisplay post={$data} width={previewWidth} />
@@ -111,6 +130,24 @@
 </form>
 
 <style>
+  .input {
+    @apply flex flex-col;
+  }
+  .input .label {
+    @apply mb-1 text-sm text-gray-500 transition-colors;
+  }
+  .input.error .label {
+    @apply text-red-500;
+  }
+  .input .field {
+    @apply rounded px-3 py-2 ring-1 ring-gray-400 transition-shadow;
+  }
+  .input.error .field {
+    @apply ring-red-500;
+  }
+  .input .error {
+    @apply mt-1 text-sm text-red-500;
+  }
   .btn.btn-disabled {
     @apply bg-gray-500 text-gray-200;
   }

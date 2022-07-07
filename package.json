@@ -16,6 +16,7 @@
   "devDependencies": {
     "@sveltejs/adapter-auto": "next",
     "@sveltejs/kit": "next",
+    "@types/seedrandom": "^3.0.2",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.0.0",
     "autoprefixer": "^10.4.7",
@@ -26,6 +27,7 @@
     "eslint-plugin-svelte3": "^4.0.0",
     "eslint-plugin-unused-imports": "^2.0.0",
     "postcss": "^8.4.14",
+    "postcss-load-config": "^4.0.1",
     "prettier": "^2.6.2",
     "prettier-plugin-svelte": "^2.7.0",
     "prettier-plugin-tailwindcss": "^0.1.11",
@@ -47,6 +49,7 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "felte": "^1.2.2",
     "imgur": "^2.2.0",
+    "seedrandom": "^3.0.5",
     "svelte-file-dropzone": "^1.0.0-dev.1",
     "trpc-sveltekit": "^2.1.1",
     "zod": "^3.17.3"

@@ -11,3 +11,9 @@ declare namespace App {
 }
 
 declare module 'svelte-file-dropzone'
+
+declare namespace svelte.JSX {
+  interface HTMLAttributes<T> {
+    oninview?: (evt: CustomEvent<boolean>) => void
+  }
+}
